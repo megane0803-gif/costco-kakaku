@@ -221,9 +221,20 @@
   <div class="search-bar">
     <div class="search-wrap">
       <span class="search-icon">🔍</span>
-      <input type="text" class="search-input" placeholder="商品名・Item No.で検索" oninput="renderList(this.value)">
+      <input type="text" class="search-input" id="home-search" placeholder="商品名で検索・楽天価格をすぐ確認"
+        oninput="onHomeSearch(this.value)" onkeydown="if(event.key==='Enter')quickSearch()">
     </div>
   </div>
+
+  <!-- クイック検索パネル -->
+  <div id="quick-panel" style="display:none; background:white; border-bottom:1px solid #eee;">
+    <div style="padding:10px 16px 0; display:flex; align-items:center; justify-content:space-between;">
+      <span style="font-size:12px; color:#888; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">楽天市場 速攻チェック</span>
+      <button onclick="closeQuick()" style="background:none;border:none;color:#bbb;font-size:18px;cursor:pointer;">×</button>
+    </div>
+    <div id="quick-results" style="padding:0 0 8px;"></div>
+  </div>
+
   <div class="list-body">
     <div id="product-list"></div>
     <div id="empty-state" class="empty-state" style="display:none">
@@ -683,6 +694,58 @@ function fmt(n) { return n.toLocaleString(undefined, { maximumFractionDigits: 1 
 function fmtDate(iso) { const d = new Date(iso); return `${d.getMonth()+1}/${d.getDate()}`; }
 function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ===================== QUICK SEARCH =====================
+let quickTimer = null;
+
+function onHomeSearch(val) {
+  renderList(val);
+  clearTimeout(quickTimer);
+  if (val.trim().length >= 2) {
+    quickTimer = setTimeout(() => quickSearch(val.trim()), 800);
+  } else {
+    closeQuick();
+  }
+}
+
+async function quickSearch(keyword) {
+  keyword = keyword || document.getElementById('home-search').value.trim();
+  if (!keyword) return;
+
+  const panel = document.getElementById('quick-panel');
+  const results = document.getElementById('quick-results');
+  panel.style.display = 'block';
+  results.innerHTML = '<div class="row-msg">取得中...</div>';
+
+  try {
+    const res = await fetch(`/api/rakuten?keyword=${encodeURIComponent(keyword)}`);
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    const items = data.Items;
+
+    if (!items || items.length === 0) {
+      results.innerHTML = '<div class="row-msg">該当商品が見つかりませんでした</div>';
+      return;
+    }
+
+    results.innerHTML = items.slice(0, 5).map(({ Item: it }) => `
+      <a class="rakuten-row" href="${it.itemUrl}" target="_blank">
+        <div class="rakuten-info">
+          <div class="rakuten-name">${esc(it.itemName)}</div>
+          <div class="rakuten-shop">${esc(it.shopName)}</div>
+        </div>
+        <div class="rakuten-price">¥${it.itemPrice.toLocaleString()}</div>
+        <div class="rakuten-arrow">›</div>
+      </a>`).join('');
+  } catch {
+    results.innerHTML = '<div class="row-msg">取得に失敗しました</div>';
+  }
+}
+
+function closeQuick() {
+  document.getElementById('quick-panel').style.display = 'none';
+  document.getElementById('quick-results').innerHTML = '';
 }
 
 // ===================== INIT =====================
