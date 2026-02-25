@@ -266,7 +266,14 @@
       <div class="form-section-title">商品情報</div>
       <div class="form-group">
         <label>Item No.</label>
-        <input type="text" id="f-itemno" placeholder="例: 123456" inputmode="numeric">
+        <div style="display:flex; gap:8px; align-items:center;">
+          <input type="text" id="f-itemno" placeholder="例: 123456" inputmode="numeric"
+            oninput="updateCostcoLink(this.value)" style="flex:1">
+          <a id="costco-lookup-btn"
+            style="display:none; padding:10px 12px; background:#005dab; color:white; border-radius:8px; font-size:13px; font-weight:600; white-space:nowrap; text-decoration:none;"
+            target="_blank">確認 ›</a>
+        </div>
+        <div class="hint" id="costco-link-hint" style="display:none;">Googleでコストコオンラインの商品を確認できます</div>
       </div>
       <div class="form-group">
         <label>商品名 <span class="req">*</span></label>
@@ -694,6 +701,21 @@ function fmt(n) { return n.toLocaleString(undefined, { maximumFractionDigits: 1 
 function fmtDate(iso) { const d = new Date(iso); return `${d.getMonth()+1}/${d.getDate()}`; }
 function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ===================== COSTCO LOOKUP =====================
+function updateCostcoLink(itemNo) {
+  const btn  = document.getElementById('costco-lookup-btn');
+  const hint = document.getElementById('costco-link-hint');
+  if (itemNo.trim()) {
+    const url = `https://www.google.com/search?q=コストコオンライン+${encodeURIComponent(itemNo.trim())}`;
+    btn.href = url;
+    btn.style.display = 'block';
+    hint.style.display = 'block';
+  } else {
+    btn.style.display = 'none';
+    hint.style.display = 'none';
+  }
 }
 
 // ===================== QUICK SEARCH =====================
