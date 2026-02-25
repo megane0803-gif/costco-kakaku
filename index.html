@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <title>コストコ価格メモ</title>
+  <title>コストコ 価格チェック</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
@@ -29,18 +29,14 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     }
     .header h1 { font-size: 17px; font-weight: 700; flex: 1; }
-    .back-btn {
-      background: none;
-      border: none;
-      color: white;
-      font-size: 22px;
-      cursor: pointer;
-      padding: 4px 6px 4px 0;
-      line-height: 1;
+    .hbtn {
+      background: none; border: none; color: white;
+      font-size: 20px; cursor: pointer; padding: 4px; line-height: 1;
     }
+    .hbtn:active { opacity: 0.7; }
 
     /* ---- Screens ---- */
     .screen { display: none; }
@@ -48,236 +44,226 @@
 
     /* ---- FAB ---- */
     .fab {
-      position: fixed;
-      bottom: 28px;
-      right: 20px;
-      width: 56px;
-      height: 56px;
-      background: #e31837;
-      color: white;
-      border: none;
-      border-radius: 50%;
-      font-size: 30px;
-      cursor: pointer;
+      position: fixed; bottom: 28px; right: 20px;
+      width: 56px; height: 56px;
+      background: #e31837; color: white; border: none;
+      border-radius: 50%; font-size: 28px; cursor: pointer;
       box-shadow: 0 4px 14px rgba(227,24,55,0.45);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 50;
-      line-height: 1;
+      display: flex; align-items: center; justify-content: center; z-index: 50;
     }
-    .fab:active { background: #c0102a; }
+    .fab:active { transform: scale(0.95); }
 
-    /* ---- Product List ---- */
-    .list-body {
-      padding: 14px;
-      padding-bottom: 88px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+    /* ---- Search ---- */
+    .search-bar {
+      padding: 10px 14px; background: white;
+      border-bottom: 1px solid #eee;
+      position: sticky; top: 49px; z-index: 90;
     }
+    .search-wrap { position: relative; }
+    .search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: #bbb; font-size: 15px; }
+    .search-input {
+      width: 100%; padding: 9px 12px 9px 34px;
+      border: 1.5px solid #e8e8e8; border-radius: 10px;
+      font-size: 15px; background: #f8f8f8; font-family: inherit;
+    }
+    .search-input:focus { outline: none; border-color: #005dab; background: white; }
 
-    .empty-state {
-      text-align: center;
-      padding: 72px 24px;
-      color: #aaa;
-    }
-    .empty-state .icon { font-size: 52px; margin-bottom: 14px; }
-    .empty-state p { font-size: 15px; line-height: 1.7; }
+    /* ---- List ---- */
+    .list-body { padding: 12px; padding-bottom: 88px; display: flex; flex-direction: column; gap: 10px; }
+
+    .empty-state { text-align: center; padding: 60px 20px; color: #bbb; }
+    .empty-icon { font-size: 48px; margin-bottom: 14px; }
+    .empty-text { font-size: 15px; line-height: 1.7; }
 
     .product-card {
-      background: white;
-      border-radius: 12px;
-      padding: 14px 16px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
-      cursor: pointer;
+      background: white; border-radius: 12px; padding: 14px 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06); cursor: pointer;
     }
-    .product-card:active { background: #fafafa; }
-
-    .card-item-no { font-size: 11px; color: #aaa; margin-bottom: 3px; }
-    .card-name { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+    .product-card:active { opacity: 0.8; }
+    .card-item-no { font-size: 11px; color: #bbb; margin-bottom: 2px; }
+    .card-name { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
     .card-spec { font-size: 12px; color: #999; margin-bottom: 8px; }
+    .card-bottom { display: flex; justify-content: space-between; align-items: baseline; }
+    .card-price { font-size: 20px; font-weight: 800; color: #e31837; }
+    .card-unit { font-size: 12px; color: #666; }
+    .card-meta { font-size: 11px; color: #ccc; margin-top: 5px; }
 
-    .card-price-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
+    /* ---- Detail ---- */
+    .detail-body { padding: 14px; padding-bottom: 40px; display: flex; flex-direction: column; gap: 12px; }
+
+    .info-card {
+      background: white; border-radius: 12px; padding: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
     }
-    .card-price { font-size: 22px; font-weight: 800; color: #e31837; }
-    .card-unit-price { font-size: 13px; color: #555; font-weight: 500; }
+    .info-item-no { font-size: 12px; color: #bbb; margin-bottom: 4px; }
+    .info-name { font-size: 19px; font-weight: 700; margin-bottom: 4px; }
+    .info-spec { font-size: 13px; color: #888; }
+    .info-memo { font-size: 13px; color: #aaa; margin-top: 8px; padding-top: 8px; border-top: 1px solid #f5f5f5; }
 
-    .card-meta { font-size: 11px; color: #bbb; margin-top: 6px; }
+    .section {
+      background: white; border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06); overflow: hidden;
+    }
+    .section-title {
+      padding: 11px 16px; font-size: 12px; font-weight: 600;
+      color: #888; text-transform: uppercase; letter-spacing: 0.5px;
+      border-bottom: 1px solid #f5f5f5; display: flex; align-items: center; gap: 6px;
+    }
+
+    /* price history rows */
+    .price-row {
+      padding: 12px 16px; border-bottom: 1px solid #f8f8f8;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .price-row:last-child { border-bottom: none; }
+    .price-row-left { flex: 1; }
+    .price-row-yen { font-size: 18px; font-weight: 700; }
+    .price-row-unit { font-size: 12px; color: #888; margin-top: 1px; }
+    .price-row-meta { font-size: 11px; color: #bbb; text-align: right; line-height: 1.6; }
+
+    /* rakuten results */
+    .rakuten-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px; border-bottom: 1px solid #f8f8f8;
+      text-decoration: none; color: inherit; cursor: pointer;
+    }
+    .rakuten-row:last-child { border-bottom: none; }
+    .rakuten-row:active { background: #fafafa; }
+    .rakuten-info { flex: 1; min-width: 0; }
+    .rakuten-name {
+      font-size: 13px; color: #444;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px;
+    }
+    .rakuten-shop { font-size: 11px; color: #bbb; }
+    .rakuten-unit { font-size: 11px; color: #888; margin-top: 1px; }
+    .rakuten-price { font-size: 17px; font-weight: 700; color: #e31837; white-space: nowrap; }
+    .rakuten-arrow { color: #ccc; font-size: 16px; }
+
+    .row-msg { padding: 18px 16px; text-align: center; font-size: 14px; color: #bbb; }
+    .row-msg.warn { color: #e31837; }
+
+    /* external links */
+    .ext-link {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 16px; border-bottom: 1px solid #f8f8f8;
+      text-decoration: none; color: #005dab; font-size: 14px; font-weight: 500;
+    }
+    .ext-link:last-child { border-bottom: none; }
+    .ext-link:active { background: #f0f6ff; }
+    .ext-icon { font-size: 18px; }
+    .ext-label { flex: 1; }
+    .ext-arrow { color: #ccc; font-size: 16px; }
 
     /* ---- Form ---- */
-    .form-body {
-      padding: 14px;
-      padding-bottom: 32px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-
+    .form-body { padding: 14px; padding-bottom: 32px; display: flex; flex-direction: column; gap: 14px; }
     .form-section {
-      background: white;
-      border-radius: 12px;
-      padding: 16px;
+      background: white; border-radius: 12px; padding: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
     }
     .form-section-title {
-      font-size: 11px;
-      color: #888;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-      margin-bottom: 14px;
+      font-size: 11px; color: #888; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 14px;
     }
-
     .form-group { margin-bottom: 14px; }
     .form-group:last-child { margin-bottom: 0; }
+    label { display: block; font-size: 13px; color: #555; margin-bottom: 6px; font-weight: 500; }
+    .req { color: #e31837; }
 
-    label {
-      display: block;
-      font-size: 13px;
-      color: #555;
-      margin-bottom: 6px;
-      font-weight: 500;
+    input[type="text"], input[type="number"], select, textarea {
+      width: 100%; padding: 12px; border: 1.5px solid #e8e8e8;
+      border-radius: 8px; font-size: 16px; color: #1a1a1a;
+      background: white; -webkit-appearance: none; appearance: none; font-family: inherit;
     }
-    .required { color: #e31837; }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: #005dab; }
 
-    input[type="text"],
-    input[type="number"],
-    select,
-    textarea {
-      width: 100%;
-      padding: 12px;
-      border: 1.5px solid #e8e8e8;
-      border-radius: 8px;
-      font-size: 16px;
-      color: #1a1a1a;
-      background: white;
-      -webkit-appearance: none;
-      appearance: none;
-      font-family: inherit;
-    }
-    input:focus, select:focus, textarea:focus {
-      outline: none;
-      border-color: #005dab;
-    }
+    .row2 { display: flex; gap: 8px; }
+    .row2 input { flex: 1; }
+    .row2 select { width: 90px; flex-shrink: 0; }
 
-    .row-2 { display: flex; gap: 8px; }
-    .row-2 input { flex: 1; }
-    .row-2 select { width: 90px; flex-shrink: 0; }
-
-    /* Tax toggle */
     .toggle-group { display: flex; gap: 8px; }
-    .toggle-btn {
-      flex: 1;
-      padding: 11px;
-      border: 1.5px solid #e8e8e8;
-      border-radius: 8px;
-      background: white;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      color: #888;
-      font-family: inherit;
+    .tgl {
+      flex: 1; padding: 11px; border: 1.5px solid #e8e8e8; border-radius: 8px;
+      background: white; font-size: 14px; font-weight: 500;
+      cursor: pointer; color: #888; font-family: inherit;
     }
-    .toggle-btn.active {
-      background: #005dab;
-      border-color: #005dab;
-      color: white;
-      font-weight: 700;
-    }
+    .tgl.active { background: #005dab; border-color: #005dab; color: white; font-weight: 700; }
 
-    /* Store chips */
     .chips { display: flex; flex-wrap: wrap; gap: 8px; }
     .chip {
-      padding: 8px 14px;
-      border: 1.5px solid #e8e8e8;
-      border-radius: 20px;
-      background: white;
-      font-size: 14px;
-      cursor: pointer;
-      color: #555;
-      font-family: inherit;
+      padding: 8px 14px; border: 1.5px solid #e8e8e8; border-radius: 20px;
+      background: white; font-size: 14px; cursor: pointer; color: #555; font-family: inherit;
     }
-    .chip.active {
-      background: #005dab;
-      border-color: #005dab;
-      color: white;
-      font-weight: 600;
-    }
+    .chip.active { background: #005dab; border-color: #005dab; color: white; font-weight: 600; }
 
-    /* Buttons */
     .btn-primary {
-      width: 100%;
-      padding: 16px;
-      background: #005dab;
-      color: white;
-      border: none;
-      border-radius: 12px;
-      font-size: 16px;
-      font-weight: 700;
-      cursor: pointer;
-      font-family: inherit;
+      width: 100%; padding: 16px; background: #005dab; color: white;
+      border: none; border-radius: 12px; font-size: 16px; font-weight: 700;
+      cursor: pointer; font-family: inherit;
     }
     .btn-primary:active { background: #004a8c; }
-
     .btn-danger {
-      width: 100%;
-      padding: 14px;
-      background: white;
-      color: #e31837;
-      border: 1.5px solid #e31837;
-      border-radius: 12px;
-      font-size: 15px;
-      cursor: pointer;
-      font-family: inherit;
-      margin-top: 8px;
+      width: 100%; padding: 14px; background: white; color: #e31837;
+      border: 1.5px solid #e31837; border-radius: 12px; font-size: 15px;
+      cursor: pointer; font-family: inherit; margin-top: 8px;
     }
-    .btn-danger:active { background: #fff0f2; }
+
+    .hint { font-size: 12px; color: #aaa; margin-top: 5px; }
   </style>
 </head>
 <body>
 
-<!-- ===== LIST SCREEN ===== -->
+<!-- ===== HOME ===== -->
 <div id="screen-list" class="screen active">
   <div class="header">
-    <h1>コストコ 価格メモ</h1>
+    <h1>コストコ 価格チェック</h1>
+    <button class="hbtn" onclick="showScreen('settings')">⚙️</button>
+  </div>
+  <div class="search-bar">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" class="search-input" placeholder="商品名・Item No.で検索" oninput="renderList(this.value)">
+    </div>
   </div>
   <div class="list-body">
     <div id="product-list"></div>
     <div id="empty-state" class="empty-state" style="display:none">
-      <div class="icon">🛒</div>
-      <p>商品がまだありません<br>右下の + で追加してください</p>
+      <div class="empty-icon">🛒</div>
+      <div class="empty-text">商品がまだありません<br>右下の + で追加してください</div>
     </div>
   </div>
   <button class="fab" onclick="openAdd()">+</button>
 </div>
 
-<!-- ===== ADD / EDIT SCREEN ===== -->
+<!-- ===== DETAIL ===== -->
+<div id="screen-detail" class="screen">
+  <div class="header">
+    <button class="hbtn" onclick="showScreen('list')">‹</button>
+    <h1 id="detail-title" style="font-size:15px">詳細</h1>
+    <button class="hbtn" onclick="openEdit(currentProductId)">✏️</button>
+  </div>
+  <div class="detail-body" id="detail-body"></div>
+</div>
+
+<!-- ===== ADD/EDIT ===== -->
 <div id="screen-add" class="screen">
   <div class="header">
-    <button class="back-btn" onclick="showScreen('list')">‹</button>
+    <button class="hbtn" onclick="goBack()">‹</button>
     <h1 id="form-title">商品を追加</h1>
   </div>
   <div class="form-body">
-
     <div class="form-section">
       <div class="form-section-title">商品情報</div>
-
       <div class="form-group">
         <label>Item No.</label>
         <input type="text" id="f-itemno" placeholder="例: 123456" inputmode="numeric">
       </div>
-
       <div class="form-group">
-        <label>商品名 <span class="required">*</span></label>
+        <label>商品名 <span class="req">*</span></label>
         <input type="text" id="f-name" placeholder="例: カークランド ミックスナッツ">
       </div>
-
       <div class="form-group">
         <label>規格</label>
-        <input type="text" id="f-spec" placeholder="例: 1.13kg、5g×52包、12ロール">
+        <input type="text" id="f-spec" placeholder="例: 1.13kg、5g×52包">
       </div>
     </div>
 
@@ -285,7 +271,7 @@
       <div class="form-section-title">単価計算（任意）</div>
       <div class="form-group">
         <label>数量と単位</label>
-        <div class="row-2">
+        <div class="row2">
           <input type="number" id="f-spec-value" placeholder="1.13" inputmode="decimal" step="any">
           <select id="f-spec-unit">
             <option value="">単位</option>
@@ -298,7 +284,6 @@
             <option value="包">包</option>
             <option value="本">本</option>
             <option value="食">食</option>
-            <option value="回">回</option>
           </select>
         </div>
       </div>
@@ -306,17 +291,15 @@
 
     <div class="form-section">
       <div class="form-section-title">価格</div>
-
       <div class="form-group">
-        <label>店頭価格 <span class="required">*</span></label>
+        <label>店頭価格 <span class="req">*</span></label>
         <input type="number" id="f-price" placeholder="1980" inputmode="numeric">
       </div>
-
       <div class="form-group">
         <label>税表示</label>
         <div class="toggle-group">
-          <button class="toggle-btn" id="tax-incl" onclick="setTax('included')">税込</button>
-          <button class="toggle-btn active" id="tax-excl" onclick="setTax('excluded')">税抜</button>
+          <button class="tgl" id="tax-incl" onclick="setTax('included')">税込</button>
+          <button class="tgl active" id="tax-excl" onclick="setTax('excluded')">税抜</button>
         </div>
       </div>
     </div>
@@ -327,9 +310,18 @@
     </div>
 
     <div class="form-section">
+      <div class="form-section-title">楽天検索キーワード（任意）</div>
+      <div class="form-group">
+        <label>商品名と違う言葉で検索したい場合</label>
+        <input type="text" id="f-keyword" placeholder="未設定の場合は商品名で検索">
+        <div class="hint">例：「カークランド ナッツ」→「ミックスナッツ 大容量」</div>
+      </div>
+    </div>
+
+    <div class="form-section">
       <div class="form-section-title">メモ（任意）</div>
       <div class="form-group">
-        <textarea id="f-memo" rows="3" placeholder="クーポン使用、最安値っぽい、コストコ専用品 など" style="resize:none"></textarea>
+        <textarea id="f-memo" rows="3" placeholder="クーポン使用、最安値っぽい など" style="resize:none"></textarea>
       </div>
     </div>
 
@@ -337,141 +329,246 @@
     <div id="delete-wrap" style="display:none">
       <button class="btn-danger" onclick="deleteProduct()">この商品を削除</button>
     </div>
+  </div>
+</div>
 
+<!-- ===== SETTINGS ===== -->
+<div id="screen-settings" class="screen">
+  <div class="header">
+    <button class="hbtn" onclick="showScreen('list')">‹</button>
+    <h1>設定</h1>
+  </div>
+  <div class="form-body">
+    <div class="form-section">
+      <div class="form-section-title">楽天 API</div>
+      <div class="form-group">
+        <label>アプリID</label>
+        <input type="text" id="s-rakuten" placeholder="楽天のアプリIDを入力">
+        <div class="hint">楽天ウェブサービスで取得したアプリIDを入力</div>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="saveSettings()">保存する</button>
   </div>
 </div>
 
 <script>
 // ===================== CONFIG =====================
-const STORES = ['幕張', '川崎', '座間', '多摩境', '新三郷', '入間', '木更津', '千葉ニュータウン'];
+const STORES = ['幕張','川崎','座間','多摩境','新三郷','入間','木更津','千葉ニュータウン'];
 
 // ===================== STATE =====================
 let currentTax = 'excluded';
 let currentStore = STORES[0];
 let editingId = null;
+let currentProductId = null;
+let prevScreen = 'list';
 
 // ===================== STORAGE =====================
-function getProducts() {
-  return JSON.parse(localStorage.getItem('cc_products') || '[]');
-}
-function setProducts(data) {
-  localStorage.setItem('cc_products', JSON.stringify(data));
-}
-function getPrices() {
-  return JSON.parse(localStorage.getItem('cc_prices') || '[]');
-}
-function setPrices(data) {
-  localStorage.setItem('cc_prices', JSON.stringify(data));
-}
-function genId() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2);
-}
+const getProducts = () => JSON.parse(localStorage.getItem('cc_products') || '[]');
+const setProducts = d => localStorage.setItem('cc_products', JSON.stringify(d));
+const getPrices   = () => JSON.parse(localStorage.getItem('cc_prices')   || '[]');
+const setPrices   = d => localStorage.setItem('cc_prices',   JSON.stringify(d));
+const getSettings = () => JSON.parse(localStorage.getItem('cc_settings') || '{}');
+const setSettings = d => localStorage.setItem('cc_settings', JSON.stringify(d));
+const genId = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
 
 // ===================== NAVIGATION =====================
-function showScreen(name) {
+function showScreen(name, from) {
+  if (from) prevScreen = from;
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-' + name).classList.add('active');
   window.scrollTo(0, 0);
-  if (name === 'list') {
-    editingId = null;
-    renderList();
+  if (name === 'list') { editingId = null; renderList(); }
+  if (name === 'settings') {
+    const s = getSettings();
+    document.getElementById('s-rakuten').value = s.rakutenApiKey || '';
   }
 }
 
-function openAdd() {
-  editingId = null;
-  resetForm();
-  document.getElementById('form-title').textContent = '商品を追加';
-  document.getElementById('delete-wrap').style.display = 'none';
-  showScreen('add');
+function goBack() {
+  if (prevScreen === 'detail' && currentProductId) {
+    showScreen('detail');
+  } else {
+    showScreen('list');
+  }
 }
 
 // ===================== LIST =====================
-function renderList() {
+function renderList(query = '') {
   const products = getProducts();
-  const prices = getPrices();
-  const listEl = document.getElementById('product-list');
-  const emptyEl = document.getElementById('empty-state');
+  const prices   = getPrices();
+  const listEl   = document.getElementById('product-list');
+  const emptyEl  = document.getElementById('empty-state');
 
-  if (products.length === 0) {
+  const q = query.toLowerCase().trim();
+  const filtered = q
+    ? products.filter(p => p.name?.toLowerCase().includes(q) || p.itemNo?.includes(q))
+    : products;
+
+  if (filtered.length === 0) {
     listEl.innerHTML = '';
     emptyEl.style.display = 'block';
     return;
   }
   emptyEl.style.display = 'none';
 
-  // Sort by most recently updated
-  const sorted = [...products].sort((a, b) => {
-    const aP = latestPrice(a.id, prices);
-    const bP = latestPrice(b.id, prices);
-    return (bP ? +new Date(bP.recordedAt) : 0) - (aP ? +new Date(aP.recordedAt) : 0);
+  const sorted = [...filtered].sort((a, b) => {
+    const at = latestPrice(a.id, prices);
+    const bt = latestPrice(b.id, prices);
+    return (bt ? +new Date(bt.recordedAt) : 0) - (at ? +new Date(at.recordedAt) : 0);
   });
 
   listEl.innerHTML = sorted.map(p => {
     const lp = latestPrice(p.id, prices);
-    const price = lp ? lp.price : null;
-    const up = unitPrice(price, p.specValue, p.specUnit);
+    const price = lp?.price ?? null;
+    const up = calcUnit(price, p.specValue, p.specUnit);
     return `
-      <div class="product-card" onclick="openEdit('${p.id}')">
+      <div class="product-card" onclick="openDetail('${p.id}')">
         ${p.itemNo ? `<div class="card-item-no">Item No. ${esc(p.itemNo)}</div>` : ''}
         <div class="card-name">${esc(p.name)}</div>
         ${p.spec ? `<div class="card-spec">${esc(p.spec)}</div>` : ''}
-        <div class="card-price-row">
+        <div class="card-bottom">
           <div class="card-price">${price != null ? '¥' + price.toLocaleString() : '未記録'}</div>
-          ${up ? `<div class="card-unit-price">¥${fmt(up.val)}/${up.unit}</div>` : ''}
+          ${up ? `<div class="card-unit">¥${fmt(up.val)}/${up.unit}</div>` : ''}
         </div>
         ${lp ? `<div class="card-meta">${esc(lp.store)} · ${fmtDate(lp.recordedAt)}</div>` : ''}
       </div>`;
   }).join('');
 }
 
-function latestPrice(productId, prices) {
-  return prices
-    .filter(p => p.productId === productId)
-    .sort((a, b) => +new Date(b.recordedAt) - +new Date(a.recordedAt))[0] || null;
+// ===================== DETAIL =====================
+function openDetail(id) {
+  const p = getProducts().find(x => x.id === id);
+  if (!p) return;
+  currentProductId = id;
+  document.getElementById('detail-title').textContent = p.name;
+  renderDetailContent(p);
+  showScreen('detail');
+  fetchRakuten(p.rakutenKeyword || p.name, p.specValue, p.specUnit);
 }
 
-function unitPrice(price, val, unit) {
-  if (!price || !val || !unit) return null;
-  const v = parseFloat(val);
-  if (!v) return null;
-  return { val: price / v, unit };
+function renderDetailContent(p) {
+  const prices  = getPrices();
+  const records = prices
+    .filter(r => r.productId === p.id)
+    .sort((a, b) => +new Date(b.recordedAt) - +new Date(a.recordedAt));
+
+  const costcoUrl  = `https://www.costco.co.jp/search?q=${encodeURIComponent(p.itemNo || p.name)}`;
+  const zaikoUrl   = `https://www.zaikoban.com/products?k=${encodeURIComponent(p.name)}`;
+  const rakutenUrl = `https://search.rakuten.co.jp/search/mall/${encodeURIComponent(p.rakutenKeyword || p.name)}/`;
+  const yahooUrl   = `https://shopping.yahoo.co.jp/search?p=${encodeURIComponent(p.name)}`;
+
+  let historyHTML = records.length === 0
+    ? '<div class="row-msg">まだ価格記録がありません</div>'
+    : records.slice(0, 10).map(r => {
+        const up = calcUnit(r.price, p.specValue, p.specUnit);
+        return `
+          <div class="price-row">
+            <div class="price-row-left">
+              <div class="price-row-yen">¥${r.price.toLocaleString()}</div>
+              ${up ? `<div class="price-row-unit">¥${fmt(up.val)}/${up.unit}</div>` : ''}
+            </div>
+            <div class="price-row-meta">${esc(r.store)}<br>${fmtDate(r.recordedAt)}</div>
+          </div>`;
+      }).join('');
+
+  document.getElementById('detail-body').innerHTML = `
+    <div class="info-card">
+      ${p.itemNo ? `<div class="info-item-no">Item No. ${esc(p.itemNo)}</div>` : ''}
+      <div class="info-name">${esc(p.name)}</div>
+      ${p.spec ? `<div class="info-spec">${esc(p.spec)}</div>` : ''}
+      ${p.memo ? `<div class="info-memo">${esc(p.memo)}</div>` : ''}
+    </div>
+
+    <div class="section">
+      <div class="section-title">🏪 コストコ 店頭価格</div>
+      ${historyHTML}
+    </div>
+
+    <div class="section" id="rakuten-section">
+      <div class="section-title">
+        <span style="color:#bf0000;font-weight:800;font-size:14px">R</span>
+        <span>楽天市場</span>
+      </div>
+      <div class="row-msg" id="rakuten-rows">価格を取得中...</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">🔗 外部サイトで確認</div>
+      <a class="ext-link" href="${costcoUrl}" target="_blank">
+        <span class="ext-icon">🏢</span>
+        <span class="ext-label">コストコオンラインで確認</span>
+        <span class="ext-arrow">›</span>
+      </a>
+      <a class="ext-link" href="${zaikoUrl}" target="_blank">
+        <span class="ext-icon">📊</span>
+        <span class="ext-label">zaikobanで過去価格を見る</span>
+        <span class="ext-arrow">›</span>
+      </a>
+      <a class="ext-link" href="${rakutenUrl}" target="_blank">
+        <span class="ext-icon">🛍️</span>
+        <span class="ext-label">楽天市場で検索</span>
+        <span class="ext-arrow">›</span>
+      </a>
+      <a class="ext-link" href="${yahooUrl}" target="_blank">
+        <span class="ext-icon">🟣</span>
+        <span class="ext-label">Yahoo!ショッピングで検索</span>
+        <span class="ext-arrow">›</span>
+      </a>
+    </div>`;
 }
 
-function fmt(n) {
-  return n.toLocaleString(undefined, { maximumFractionDigits: 1 });
-}
+async function fetchRakuten(keyword, specValue, specUnit) {
+  const el = document.getElementById('rakuten-rows');
+  if (!el) return;
 
-function fmtDate(iso) {
-  const d = new Date(iso);
-  return `${d.getMonth() + 1}/${d.getDate()}`;
-}
+  try {
+    const res = await fetch(`/api/rakuten?keyword=${encodeURIComponent(keyword)}`);
+    if (!res.ok) throw new Error('API error');
+    const data = await res.json();
 
-function esc(s) {
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    const items = data.Items;
+    if (!items || items.length === 0) {
+      el.outerHTML = '<div class="row-msg">該当商品が見つかりませんでした</div>';
+      return;
+    }
+
+    const html = items.slice(0, 5).map(({ Item: it }) => {
+      const up = calcUnit(it.itemPrice, specValue, specUnit);
+      return `
+        <a class="rakuten-row" href="${it.itemUrl}" target="_blank">
+          <div class="rakuten-info">
+            <div class="rakuten-name">${esc(it.itemName)}</div>
+            <div class="rakuten-shop">${esc(it.shopName)}</div>
+            ${up ? `<div class="rakuten-unit">¥${fmt(up.val)}/${up.unit}</div>` : ''}
+          </div>
+          <div class="rakuten-price">¥${it.itemPrice.toLocaleString()}</div>
+          <div class="rakuten-arrow">›</div>
+        </a>`;
+    }).join('');
+
+    el.outerHTML = html;
+  } catch {
+    const el2 = document.getElementById('rakuten-rows');
+    if (el2) el2.innerHTML = '取得に失敗しました';
+  }
 }
 
 // ===================== FORM =====================
-function buildStoreChips() {
-  const el = document.getElementById('store-chips');
-  el.innerHTML = STORES.map(s =>
+function buildChips() {
+  document.getElementById('store-chips').innerHTML = STORES.map(s =>
     `<button class="chip${s === currentStore ? ' active' : ''}" onclick="setStore('${s}')">${s}</button>`
   ).join('');
 }
 
 function resetForm() {
-  ['f-itemno', 'f-name', 'f-spec', 'f-price', 'f-memo'].forEach(id => {
+  ['f-itemno','f-name','f-spec','f-price','f-memo','f-keyword'].forEach(id => {
     document.getElementById(id).value = '';
   });
   document.getElementById('f-spec-value').value = '';
   document.getElementById('f-spec-unit').value = '';
   setTax('excluded');
   setStore(STORES[0]);
-  buildStoreChips();
+  buildChips();
 }
 
 function setTax(type) {
@@ -482,81 +579,78 @@ function setTax(type) {
 
 function setStore(name) {
   currentStore = name;
-  document.querySelectorAll('.chip').forEach(c => {
-    c.classList.toggle('active', c.textContent === name);
-  });
+  document.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.textContent === name));
+}
+
+function openAdd() {
+  editingId = null;
+  prevScreen = 'list';
+  resetForm();
+  document.getElementById('form-title').textContent = '商品を追加';
+  document.getElementById('delete-wrap').style.display = 'none';
+  showScreen('add');
 }
 
 function openEdit(id) {
-  const products = getProducts();
-  const prices = getPrices();
-  const p = products.find(x => x.id === id);
+  const p = getProducts().find(x => x.id === id);
   if (!p) return;
-
   editingId = id;
+  prevScreen = 'detail';
   resetForm();
-
-  document.getElementById('f-itemno').value = p.itemNo || '';
-  document.getElementById('f-name').value = p.name || '';
-  document.getElementById('f-spec').value = p.spec || '';
+  document.getElementById('f-itemno').value  = p.itemNo  || '';
+  document.getElementById('f-name').value    = p.name    || '';
+  document.getElementById('f-spec').value    = p.spec    || '';
   document.getElementById('f-spec-value').value = p.specValue || '';
-  document.getElementById('f-spec-unit').value = p.specUnit || '';
-  document.getElementById('f-memo').value = p.memo || '';
-
-  const lp = latestPrice(id, prices);
-  if (lp) {
-    document.getElementById('f-price').value = lp.price;
-    setTax('included');
-    setStore(lp.store || STORES[0]);
-  }
-
-  buildStoreChips();
+  document.getElementById('f-spec-unit').value  = p.specUnit  || '';
+  document.getElementById('f-memo').value    = p.memo    || '';
+  document.getElementById('f-keyword').value = p.rakutenKeyword || '';
+  const lp = latestPrice(id, getPrices());
+  if (lp) { document.getElementById('f-price').value = lp.price; setTax('included'); setStore(lp.store || STORES[0]); }
+  buildChips();
   document.getElementById('form-title').textContent = '商品を編集';
   document.getElementById('delete-wrap').style.display = 'block';
   showScreen('add');
 }
 
 function saveProduct() {
-  const name = document.getElementById('f-name').value.trim();
+  const name     = document.getElementById('f-name').value.trim();
   const priceRaw = document.getElementById('f-price').value.trim();
-
-  if (!name) { alert('商品名を入力してください'); return; }
-  if (!priceRaw) { alert('価格を入力してください'); return; }
+  if (!name)     { alert('商品名を入力してください'); return; }
+  if (!priceRaw) { alert('価格を入力してください');   return; }
 
   let price = parseFloat(priceRaw);
   if (currentTax === 'excluded') price = Math.round(price * 1.1);
 
   const products = getProducts();
-  const prices = getPrices();
-
-  const productData = {
-    itemNo: document.getElementById('f-itemno').value.trim(),
+  const prices   = getPrices();
+  const data = {
+    itemNo:         document.getElementById('f-itemno').value.trim(),
     name,
-    spec: document.getElementById('f-spec').value.trim(),
-    specValue: document.getElementById('f-spec-value').value,
-    specUnit: document.getElementById('f-spec-unit').value,
-    memo: document.getElementById('f-memo').value.trim(),
+    spec:           document.getElementById('f-spec').value.trim(),
+    specValue:      document.getElementById('f-spec-value').value,
+    specUnit:       document.getElementById('f-spec-unit').value,
+    memo:           document.getElementById('f-memo').value.trim(),
+    rakutenKeyword: document.getElementById('f-keyword').value.trim(),
   };
 
   if (editingId) {
-    const idx = products.findIndex(p => p.id === editingId);
-    if (idx >= 0) products[idx] = { ...products[idx], ...productData };
+    const i = products.findIndex(p => p.id === editingId);
+    if (i >= 0) products[i] = { ...products[i], ...data };
   } else {
-    products.push({ id: genId(), ...productData, createdAt: new Date().toISOString() });
-    editingId = products[products.length - 1].id;
+    editingId = genId();
+    products.push({ id: editingId, ...data, createdAt: new Date().toISOString() });
   }
 
-  prices.push({
-    id: genId(),
-    productId: editingId,
-    price,
-    store: currentStore,
-    recordedAt: new Date().toISOString(),
-  });
-
+  prices.push({ id: genId(), productId: editingId, price, store: currentStore, recordedAt: new Date().toISOString() });
   setProducts(products);
   setPrices(prices);
-  showScreen('list');
+
+  if (prevScreen === 'detail' && currentProductId === editingId) {
+    currentProductId = editingId;
+    openDetail(editingId);
+  } else {
+    showScreen('list');
+  }
 }
 
 function deleteProduct() {
@@ -567,8 +661,31 @@ function deleteProduct() {
   showScreen('list');
 }
 
+// ===================== SETTINGS =====================
+function saveSettings() {
+  setSettings({ ...getSettings(), rakutenApiKey: document.getElementById('s-rakuten').value.trim() });
+  alert('保存しました');
+  showScreen('list');
+}
+
+// ===================== UTILS =====================
+function latestPrice(productId, prices) {
+  return prices
+    .filter(p => p.productId === productId)
+    .sort((a, b) => +new Date(b.recordedAt) - +new Date(a.recordedAt))[0] || null;
+}
+function calcUnit(price, val, unit) {
+  if (!price || !val || !unit) return null;
+  const v = parseFloat(val);
+  return v ? { val: price / v, unit } : null;
+}
+function fmt(n) { return n.toLocaleString(undefined, { maximumFractionDigits: 1 }); }
+function fmtDate(iso) { const d = new Date(iso); return `${d.getMonth()+1}/${d.getDate()}`; }
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 // ===================== INIT =====================
-buildStoreChips();
 renderList();
 </script>
 </body>
