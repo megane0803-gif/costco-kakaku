@@ -724,12 +724,23 @@ function updateCostcoLink(itemNo) {
       try {
         const res = await fetch(`/api/costco?itemNo=${encodeURIComponent(itemNo.trim())}`);
         const data = await res.json();
+        const filled = [];
+
         if (data.name) {
-          if (!nameEl.value) nameEl.value = data.name;
-          hint.textContent = `✓ 商品名を自動入力しました`;
-        } else {
-          hint.textContent = 'Googleで商品を確認できます';
+          if (!nameEl.value) { nameEl.value = data.name; filled.push('商品名'); }
         }
+        if (data.priceYen) {
+          const priceEl = document.getElementById('f-price');
+          if (!priceEl.value) {
+            priceEl.value = data.priceYen;
+            setTax('included');
+            filled.push('価格（税込）');
+          }
+        }
+
+        hint.textContent = filled.length > 0
+          ? `✓ ${filled.join('・')}を自動入力しました`
+          : 'Googleで商品を確認できます';
       } catch {
         hint.textContent = 'Googleで商品を確認できます';
       }
