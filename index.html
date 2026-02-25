@@ -704,14 +704,36 @@ function esc(s) {
 }
 
 // ===================== COSTCO LOOKUP =====================
+let costcoTimer = null;
+
 function updateCostcoLink(itemNo) {
   const btn  = document.getElementById('costco-lookup-btn');
   const hint = document.getElementById('costco-link-hint');
+  const nameEl = document.getElementById('f-name');
+
+  clearTimeout(costcoTimer);
+
   if (itemNo.trim()) {
     const url = `https://www.google.com/search?q=コストコオンライン+${encodeURIComponent(itemNo.trim())}`;
     btn.href = url;
     btn.style.display = 'block';
+    hint.textContent = '商品名を取得中...';
     hint.style.display = 'block';
+
+    costcoTimer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/costco?itemNo=${encodeURIComponent(itemNo.trim())}`);
+        const data = await res.json();
+        if (data.name) {
+          if (!nameEl.value) nameEl.value = data.name;
+          hint.textContent = `✓ 商品名を自動入力しました`;
+        } else {
+          hint.textContent = 'Googleで商品を確認できます';
+        }
+      } catch {
+        hint.textContent = 'Googleで商品を確認できます';
+      }
+    }, 800);
   } else {
     btn.style.display = 'none';
     hint.style.display = 'none';
