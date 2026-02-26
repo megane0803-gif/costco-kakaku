@@ -738,9 +738,16 @@ function updateCostcoLink(itemNo) {
           }
         }
 
-        hint.textContent = filled.length > 0
+        let hintMsg = filled.length > 0
           ? `✓ ${filled.join('・')}を自動入力しました`
           : 'Googleで商品を確認できます';
+        if (data.priceValidUntil && data.priceYen) {
+          const until = new Date(data.priceValidUntil);
+          const mm = until.getMonth() + 1;
+          const dd = until.getDate();
+          hintMsg += `（セール〜${mm}/${dd}）`;
+        }
+        hint.textContent = hintMsg;
       } catch {
         hint.textContent = 'Googleで商品を確認できます';
       }
