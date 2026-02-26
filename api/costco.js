@@ -21,44 +21,82 @@ async function fetchWithRetry(url, retries = 2) {
   }
 }
 
+function extractPrice(html, itemNo) {
+  const priceRe = /¥([\d,]{3,8})/g;
+  const allMatches = [];
+  let m;
+  while ((m = priceRe.exec(html)) !== null) {
+    allMatches.push({ pos: m.index, raw: m[1], value: parseInt(m[1].replace(/,/g, ''), 10) });
+  }
+  if (allMatches.length === 0) return null;
+  const itemPos = html.indexOf(itemNo);
+  if (itemPos !== -1) {
+    const nearby = allMatches.filter(p => Math.abs(p.pos - itemPos) < 500);
+    if (nearby.length > 0) {
+      nearby.sort((a, b) => Math.abs(a.pos - itemPos) - Math.abs(b.pos - itemPos));
+      return nearby[0].value;
+    }
+  }
+  const reasonable = allMatches.filter(p => p.value >= 100 && p.value <= 100000);
+  return reasonable.length > 0 ? reasonable[0].value : null;
+}
+
 module.exports = async (req, res) => {
   const { itemNo } = req.query;
   if (!itemNo) return res.status(400).json({ error: 'itemNo required' });
 
   try {
-    // productDetails API から商品名・価格・セール期限を取得
-    const apiUrl = `https://www.costco.co.jp/rest/v2/japan/metadata/productDetails?code=${encodeURIComponent(itemNo)}&lang=ja&curr=JPY`;
-    const apiRes = await fetchWithRetry(apiUrl);
-    const data = await apiRes.json();
+    // API（現在価格）とHTML（通常価格）を並列取得
+    const [apiResult, htmlResult] = await Promise.allSettled([
+      fetchWithRetry(`https://www.costco.co.jp/rest/v2/japan/metadata/productDetails?code=${encodeURIComponent(itemNo)}&lang=ja&curr=JPY`),
+      fetchWithRetry(`https://www.costco.co.jp/p/${encodeURIComponent(itemNo)}`),
+    ]);
 
-    // 商品名
-    const name = data.metaTitle || null;
+    let name = null, priceYen = null, normalPriceYen = null, discountYen = null, priceValidUntil = null;
+    let finalUrl = `https://www.costco.co.jp/p/${itemNo}`;
 
-    // schemaOrgProduct から現在価格とセール期限を取得
-    let priceYen = null;
-    let priceValidUntil = null;
-    if (data.schemaOrgProduct) {
+    // productDetails API → 商品名・現在価格・セール期限
+    if (apiResult.status === 'fulfilled') {
       try {
-        const schema = JSON.parse(data.schemaOrgProduct);
-        if (schema.offers) {
-          const price = parseFloat(schema.offers.price);
-          if (!isNaN(price)) priceYen = Math.round(price);
-          priceValidUntil = schema.offers.priceValidUntil || null;
+        const data = await apiResult.value.json();
+        name = data.metaTitle || null;
+        if (data.schemaOrgProduct) {
+          const schema = JSON.parse(data.schemaOrgProduct);
+          if (schema.offers) {
+            const p = parseFloat(schema.offers.price);
+            if (!isNaN(p)) priceYen = Math.round(p);
+            priceValidUntil = schema.offers.priceValidUntil || null;
+          }
         }
       } catch (_) {}
     }
 
-    const finalUrl = `https://www.costco.co.jp/p/${itemNo}`;
+    // HTML → 通常価格（静的HTML内の¥表記）
+    if (htmlResult.status === 'fulfilled') {
+      try {
+        const html = await htmlResult.value.text();
+        finalUrl = htmlResult.value.url;
+        if (!name) {
+          const titleMatch = html.match(/<title>(.*?)<\/title>/i);
+          if (titleMatch) name = titleMatch[1].replace(/\s*\|\s*Costco Japan\s*$/i, '').trim();
+        }
+        normalPriceYen = extractPrice(html, itemNo);
+      } catch (_) {}
+    }
+
+    // 割引額を計算（通常価格 > 現在価格のとき）
+    if (priceYen && normalPriceYen && normalPriceYen > priceYen) {
+      discountYen = normalPriceYen - priceYen;
+    }
 
     res.status(200).json({
-      itemNo,
-      name,
-      priceYen,
-      priceValidUntil,
-      finalUrl,
+      itemNo, name, priceYen, normalPriceYen, discountYen, priceValidUntil, finalUrl,
       fetchedAt: new Date().toISOString(),
     });
   } catch (e) {
-    res.status(500).json({ error: e.message, itemNo, name: null, priceYen: null, priceValidUntil: null });
+    res.status(500).json({
+      error: e.message, itemNo, name: null,
+      priceYen: null, normalPriceYen: null, discountYen: null, priceValidUntil: null,
+    });
   }
 };
