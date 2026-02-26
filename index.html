@@ -430,7 +430,7 @@ function openDetail(id) {
   const sheet = document.getElementById('detail-sheet');
   sheet.classList.add('open');
   sheet.scrollTop = 0;
-  fetchRakuten(p.rakutenKeyword || p.name, p.specValue, p.specUnit);
+  fetchRakuten(p);
 }
 
 function closeDetail() {
@@ -607,20 +607,33 @@ function renderDetailContent(p) {
     </div>`;
 }
 
-async function fetchRakuten(keyword, specValue, specUnit) {
+async function fetchRakuten(p) {
   const el = document.getElementById('rakuten-rows');
   if (!el) return;
+
+  // カスタムキーワードがあればキーワード検索、なければJAN検索
+  const param = p.rakutenKeyword
+    ? `keyword=${encodeURIComponent(p.rakutenKeyword)}`
+    : `name=${encodeURIComponent(p.name)}`;
+
   try {
-    const res = await fetch(`/api/rakuten?keyword=${encodeURIComponent(keyword)}`);
+    const res = await fetch(`/api/rakuten?${param}`);
     if (!res.ok) throw new Error('API error');
     const data = await res.json();
+
+    if (data.noJan) {
+      el.outerHTML = '<div class="row-msg">コストコ専用商品のため他ECサイトでの取り扱いなし</div>';
+      return;
+    }
+
     const items = data.Items;
     if (!items || items.length === 0) {
       el.outerHTML = '<div class="row-msg">該当商品が見つかりませんでした</div>';
       return;
     }
+
     const html = items.slice(0, 5).map(({ Item: it }) => {
-      const up = calcUnit(it.itemPrice, specValue, specUnit);
+      const up = calcUnit(it.itemPrice, p.specValue, p.specUnit);
       return `
         <a class="rakuten-row" href="${it.itemUrl}" target="_blank">
           <div class="rakuten-info">
@@ -714,7 +727,7 @@ function saveProduct() {
     if (updatedP) {
       document.getElementById('detail-title').textContent = updatedP.name;
       renderDetailContent(updatedP);
-      fetchRakuten(updatedP.rakutenKeyword || updatedP.name, updatedP.specValue, updatedP.specUnit);
+      fetchRakuten(updatedP);
     }
   }
 
