@@ -55,7 +55,8 @@ module.exports = async (req, res) => {
     let name = null, priceYen = null, normalPriceYen = null, discountYen = null, priceValidUntil = null;
     let finalUrl = `https://www.costco.co.jp/p/${itemNo}`;
 
-    // productDetails API → 商品名・現在価格・セール期限
+    // productDetails API → 商品名・現在価格・セール期限・JANコード
+    let janCode = null;
     if (apiResult.status === 'fulfilled') {
       try {
         const data = await apiResult.value.json();
@@ -67,6 +68,7 @@ module.exports = async (req, res) => {
             if (!isNaN(p)) priceYen = Math.round(p);
             priceValidUntil = schema.offers.priceValidUntil || null;
           }
+          janCode = schema.gtin13 || schema.gtin || schema.gtin14 || schema.gtin8 || null;
         }
       } catch (_) {}
     }
@@ -90,7 +92,7 @@ module.exports = async (req, res) => {
     }
 
     res.status(200).json({
-      itemNo, name, priceYen, normalPriceYen, discountYen, priceValidUntil, finalUrl,
+      itemNo, name, priceYen, normalPriceYen, discountYen, priceValidUntil, finalUrl, janCode,
       fetchedAt: new Date().toISOString(),
     });
   } catch (e) {

@@ -232,6 +232,73 @@
       background: #fff5f6; border-radius: 6px; padding: 5px 8px;
       border: 1px solid #fdd;
     }
+
+    /* ---- Compare Search ---- */
+    .compare-bar {
+      padding: 12px 14px; background: white;
+      border-bottom: 1px solid #eee;
+    }
+    .compare-wrap { display: flex; gap: 8px; }
+    .compare-input {
+      flex: 1; padding: 12px 14px;
+      border: 2px solid #005dab; border-radius: 10px;
+      font-size: 17px; background: #f8faff; font-family: inherit;
+    }
+    .compare-input:focus { outline: none; border-color: #e31837; background: white; }
+    .compare-btn {
+      padding: 0 20px; background: #005dab; color: white;
+      border: none; border-radius: 10px; font-size: 15px;
+      font-weight: 700; cursor: pointer; white-space: nowrap; font-family: inherit;
+    }
+    .compare-btn:active { background: #004a8c; }
+
+    /* ---- Compare Result ---- */
+    .compare-result { padding: 12px 14px 0; display: none; flex-direction: column; gap: 10px; }
+    .compare-result.visible { display: flex; }
+
+    .compare-costco-card {
+      background: white; border-radius: 12px; padding: 14px 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .compare-label {
+      font-size: 11px; color: #888; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;
+    }
+    .compare-name { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+    .compare-price-main { font-size: 24px; font-weight: 800; color: #e31837; }
+    .compare-normal { font-size: 13px; color: #999; text-decoration: line-through; margin-left: 8px; }
+    .compare-discount {
+      display: inline-block; font-size: 12px; color: #e31837; margin-top: 4px;
+      background: #fff5f6; border-radius: 6px; padding: 3px 8px; border: 1px solid #fdd;
+    }
+
+    .compare-ext-buttons { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+    .compare-ext-btn {
+      flex: 1; min-width: 80px; padding: 10px 12px;
+      border: 1.5px solid #e8e8e8; border-radius: 8px;
+      background: white; font-size: 13px; font-weight: 500;
+      text-align: center; text-decoration: none; color: #005dab;
+      cursor: pointer; font-family: inherit;
+    }
+    .compare-ext-btn:active { background: #f0f6ff; }
+
+    .compare-save-btn {
+      width: 100%; padding: 14px; background: #e31837; color: white;
+      border: none; border-radius: 12px; font-size: 15px;
+      font-weight: 700; cursor: pointer; font-family: inherit;
+      margin-bottom: 4px;
+    }
+    .compare-save-btn:active { background: #c0142e; }
+
+    .compare-loading {
+      text-align: center; padding: 24px; color: #bbb; font-size: 14px;
+    }
+
+    .list-divider {
+      font-size: 12px; color: #888; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      padding: 8px 4px 4px; margin-top: 4px;
+    }
   </style>
 </head>
 <body>
@@ -242,15 +309,17 @@
   <button class="hbtn" onclick="openSettings()">⚙️</button>
 </div>
 
-<div class="search-bar">
-  <div class="search-wrap">
-    <span class="search-icon">🔍</span>
-    <input type="text" class="search-input" id="home-search"
-      placeholder="商品名で検索・楽天価格をすぐ確認"
-      oninput="onHomeSearch(this.value)"
-      onkeydown="if(event.key==='Enter')quickSearch()">
+<!-- ===== COMPARE SEARCH ===== -->
+<div class="compare-bar">
+  <div class="compare-wrap">
+    <input type="text" class="compare-input" id="compare-input"
+      placeholder="商品番号を入力" inputmode="numeric"
+      onkeydown="if(event.key==='Enter')searchProduct()">
+    <button class="compare-btn" onclick="searchProduct()">検索</button>
   </div>
 </div>
+
+<div class="compare-result" id="compare-result"></div>
 
 <div id="quick-panel">
   <div style="padding:10px 16px 0; display:flex; align-items:center; justify-content:space-between;">
@@ -261,6 +330,16 @@
 </div>
 
 <div class="list-body">
+  <div class="search-bar" style="position:static; padding:0; margin-bottom:10px; background:none; border:none;">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" class="search-input" id="home-search"
+        placeholder="保存済み商品を検索"
+        oninput="onHomeSearch(this.value)"
+        onkeydown="if(event.key==='Enter')quickSearch()">
+    </div>
+  </div>
+  <div class="list-divider">保存済み商品</div>
   <div id="product-list"></div>
   <div id="empty-state" class="empty-state" style="display:none">
     <div class="empty-icon">🛒</div>
@@ -304,6 +383,7 @@
         </div>
         <div class="hint" id="costco-link-hint" style="display:none;"></div>
         <div class="sale-hint" id="costco-sale-hint" style="display:none;"></div>
+        <input type="hidden" id="f-jancode">
       </div>
       <div class="form-group">
         <label>商品名 <span class="req">*</span></label>
@@ -460,6 +540,7 @@ function openEdit(id) {
   document.getElementById('f-spec-unit').value  = p.specUnit  || '';
   document.getElementById('f-memo').value       = p.memo    || '';
   document.getElementById('f-keyword').value    = p.rakutenKeyword || '';
+  document.getElementById('f-jancode').value    = p.janCode || '';
   const lp = latestPrice(id, getPrices());
   if (lp) { document.getElementById('f-price').value = lp.price; setTax('included'); setStore(lp.store || STORES[0]); }
   buildChips();
@@ -611,20 +692,20 @@ async function fetchRakuten(p) {
   const el = document.getElementById('rakuten-rows');
   if (!el) return;
 
-  // カスタムキーワードがあればキーワード検索、なければJAN検索
-  const param = p.rakutenKeyword
-    ? `keyword=${encodeURIComponent(p.rakutenKeyword)}`
-    : `name=${encodeURIComponent(p.name)}`;
+  // 優先順位: カスタムキーワード > コストコ取得JAN > 商品名キーワード
+  let param;
+  if (p.rakutenKeyword) {
+    param = `keyword=${encodeURIComponent(p.rakutenKeyword)}`;
+  } else if (p.janCode) {
+    param = `jan=${encodeURIComponent(p.janCode)}`;
+  } else {
+    param = `keyword=${encodeURIComponent(p.name)}`;
+  }
 
   try {
-    const res = await fetch(`/api/rakuten?${param}`);
+    const res = await fetch(`/api/rakuten?${param}${rakutenApiParam()}`);
     if (!res.ok) throw new Error('API error');
     const data = await res.json();
-
-    if (data.noJan) {
-      el.outerHTML = '<div class="row-msg">コストコ専用商品のため他ECサイトでの取り扱いなし</div>';
-      return;
-    }
 
     const items = data.Items;
     if (!items || items.length === 0) {
@@ -660,7 +741,7 @@ function buildChips() {
 }
 
 function resetForm() {
-  ['f-itemno','f-name','f-spec','f-price','f-memo','f-keyword'].forEach(id => {
+  ['f-itemno','f-name','f-spec','f-price','f-memo','f-keyword','f-jancode'].forEach(id => {
     document.getElementById(id).value = '';
   });
   document.getElementById('f-spec-value').value = '';
@@ -703,6 +784,7 @@ function saveProduct() {
     specUnit:       document.getElementById('f-spec-unit').value,
     memo:           document.getElementById('f-memo').value.trim(),
     rakutenKeyword: document.getElementById('f-keyword').value.trim(),
+    janCode:        document.getElementById('f-jancode').value.trim(),
   };
 
   const isNew = !editingId;
@@ -806,6 +888,9 @@ function updateCostcoLink(itemNo) {
             filled.push('価格');
           }
         }
+        if (data.janCode) {
+          document.getElementById('f-jancode').value = data.janCode;
+        }
 
         hint.textContent = filled.length > 0
           ? `✓ ${filled.join('・')}を自動入力しました`
@@ -836,6 +921,152 @@ function updateCostcoLink(itemNo) {
   }
 }
 
+// ===================== RAKUTEN API HELPER =====================
+function rakutenApiParam() {
+  const key = getSettings().rakutenApiKey;
+  return key ? `&apiKey=${encodeURIComponent(key)}` : '';
+}
+
+// ===================== COMPARE SEARCH =====================
+let compareData = null; // { costco, rakutenItems }
+
+async function searchProduct(itemNo) {
+  itemNo = itemNo || document.getElementById('compare-input').value.trim();
+  if (!itemNo) return;
+
+  const el = document.getElementById('compare-result');
+  el.classList.add('visible');
+  el.innerHTML = '<div class="compare-loading">コストコ情報を取得中...</div>';
+  compareData = null;
+
+  try {
+    // Step 1: コストコAPI
+    const costcoRes = await fetch(`/api/costco?itemNo=${encodeURIComponent(itemNo)}`);
+    const costco = await costcoRes.json();
+
+    // Step 2: 楽天API（コストコ結果の商品名/JANで検索）
+    el.innerHTML = renderCompareResult(costco, null, 'loading');
+
+    let rakutenItems = [];
+    if (costco.name || costco.janCode) {
+      let param;
+      if (costco.janCode) {
+        param = `jan=${encodeURIComponent(costco.janCode)}`;
+      } else {
+        param = `keyword=${encodeURIComponent(costco.name)}`;
+      }
+      try {
+        const rRes = await fetch(`/api/rakuten?${param}${rakutenApiParam()}`);
+        if (rRes.ok) {
+          const rData = await rRes.json();
+          rakutenItems = (rData.Items || []).map(i => i.Item);
+        }
+      } catch {}
+    }
+
+    compareData = { costco, rakutenItems };
+    el.innerHTML = renderCompareResult(costco, rakutenItems, 'done');
+  } catch (e) {
+    el.innerHTML = '<div class="compare-loading">取得に失敗しました</div>';
+  }
+}
+
+function renderCompareResult(costco, rakutenItems, state) {
+  let html = '';
+
+  // コストコセクション
+  html += '<div class="compare-costco-card">';
+  html += '<div class="compare-label">コストコオンライン</div>';
+  if (costco.name) {
+    html += `<div class="compare-name">${esc(costco.name)}</div>`;
+    if (costco.priceYen) {
+      html += `<div><span class="compare-price-main">¥${costco.priceYen.toLocaleString()}</span>`;
+      if (costco.normalPriceYen && costco.normalPriceYen > costco.priceYen) {
+        html += `<span class="compare-normal">¥${costco.normalPriceYen.toLocaleString()}</span>`;
+      }
+      html += '</div>';
+      if (costco.discountYen) {
+        let discText = `¥${costco.discountYen.toLocaleString()}引き`;
+        if (costco.priceValidUntil) {
+          const d = new Date(costco.priceValidUntil);
+          discText += ` 〜${d.getMonth()+1}/${d.getDate()}`;
+        }
+        html += `<div class="compare-discount">${discText}</div>`;
+      }
+    } else {
+      html += '<div style="color:#999; font-size:14px;">価格情報なし</div>';
+    }
+    if (costco.finalUrl) {
+      html += `<a href="${costco.finalUrl}" target="_blank" style="display:inline-block; margin-top:8px; font-size:13px; color:#005dab; text-decoration:none;">コストコオンラインで見る ›</a>`;
+    }
+  } else {
+    html += '<div style="color:#999; font-size:14px;">商品が見つかりませんでした</div>';
+  }
+  html += '</div>';
+
+  // 楽天セクション
+  html += '<div class="section">';
+  html += '<div class="section-title"><span style="color:#bf0000;font-weight:800;font-size:14px">R</span> 楽天市場</div>';
+  if (state === 'loading') {
+    html += '<div class="row-msg">楽天市場の価格を取得中...</div>';
+  } else if (!rakutenItems || rakutenItems.length === 0) {
+    html += '<div class="row-msg">楽天市場で該当商品が見つかりませんでした</div>';
+  } else {
+    html += rakutenItems.slice(0, 5).map(it => `
+      <a class="rakuten-row" href="${it.itemUrl}" target="_blank">
+        <div class="rakuten-info">
+          <div class="rakuten-name">${esc(it.itemName)}</div>
+          <div class="rakuten-shop">${esc(it.shopName)}</div>
+        </div>
+        <div class="rakuten-price">¥${it.itemPrice.toLocaleString()}</div>
+        <div class="rakuten-arrow">›</div>
+      </a>`).join('');
+  }
+  html += '</div>';
+
+  // 他サイトで検索
+  if (costco.name) {
+    const q = encodeURIComponent(costco.name);
+    html += '<div class="compare-costco-card">';
+    html += '<div class="compare-label">他サイトで検索</div>';
+    html += '<div class="compare-ext-buttons">';
+    html += `<a class="compare-ext-btn" href="https://shopping.yahoo.co.jp/search?p=${q}" target="_blank">Yahoo!</a>`;
+    html += `<a class="compare-ext-btn" href="https://www.amazon.co.jp/s?k=${q}" target="_blank">Amazon</a>`;
+    html += `<a class="compare-ext-btn" href="https://www.google.com/search?q=${q}+価格" target="_blank">Google</a>`;
+    html += '</div></div>';
+  }
+
+  // 保存ボタン
+  if (costco.name) {
+    html += `<button class="compare-save-btn" onclick="saveFromCompare()">この商品を保存する</button>`;
+  }
+
+  return html;
+}
+
+function saveFromCompare() {
+  if (!compareData || !compareData.costco) return;
+  const c = compareData.costco;
+
+  // フォームを開いてデータを自動入力
+  editingId = null;
+  editingFromDetail = false;
+  resetForm();
+  document.getElementById('form-title').textContent = '商品を追加';
+  document.getElementById('delete-wrap').style.display = 'none';
+
+  if (c.itemNo)   document.getElementById('f-itemno').value = c.itemNo;
+  if (c.name)     document.getElementById('f-name').value = c.name;
+  if (c.janCode)  document.getElementById('f-jancode').value = c.janCode;
+  if (c.priceYen) {
+    document.getElementById('f-price').value = c.priceYen;
+    setTax('included');
+  }
+
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('add-sheet').classList.add('open');
+}
+
 // ===================== QUICK SEARCH =====================
 let quickTimer = null;
 
@@ -859,7 +1090,7 @@ async function quickSearch(keyword) {
   results.innerHTML = '<div class="row-msg">取得中...</div>';
 
   try {
-    const res = await fetch(`/api/rakuten?keyword=${encodeURIComponent(keyword)}`);
+    const res = await fetch(`/api/rakuten?keyword=${encodeURIComponent(keyword)}${rakutenApiParam()}`);
     if (!res.ok) throw new Error();
     const data = await res.json();
     const items = data.Items;
