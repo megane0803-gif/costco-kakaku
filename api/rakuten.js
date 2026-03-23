@@ -1,6 +1,7 @@
 module.exports = async (req, res) => {
   const { keyword, jan, name, apiKey: queryApiKey } = req.query;
-  const apiKey = process.env.RAKUTEN_API_KEY || queryApiKey;
+  // クライアント提供キーを優先（環境変数が無効な場合に対応）
+  const apiKey = queryApiKey || process.env.RAKUTEN_API_KEY;
 
   if (!apiKey) return res.status(400).json({ error: 'APIキーが設定されていません。設定画面で楽天アプリIDを入力してください。' });
   if (!keyword && !jan && !name) return res.status(400).json({ error: 'keyword, jan, or name required' });
@@ -11,18 +12,21 @@ module.exports = async (req, res) => {
   try {
     let url;
     if (keyword) {
-      // キーワード検索（ホーム画面のクイック検索 or カスタムキーワード）
       url = `${BASE}?${COMMON}&keyword=${encodeURIComponent(keyword)}`;
     } else if (jan) {
-      // JANコード検索（コストコAPIから取得したJAN）
       url = `${BASE}?${COMMON}&jan=${encodeURIComponent(jan)}`;
     } else {
-      // 商品名でキーワード検索（フォールバック）
       url = `${BASE}?${COMMON}&keyword=${encodeURIComponent(name)}`;
     }
 
     const response = await fetch(url);
     const data = await response.json();
+
+    // 楽天APIのエラーをクライアントに正しく伝える
+    if (data.error) {
+      return res.status(502).json({ error: `楽天API: ${data.error_description || data.error}` });
+    }
+
     res.setHeader('Cache-Control', 's-maxage=300');
     return res.status(200).json(data);
   } catch (e) {

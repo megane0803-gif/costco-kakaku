@@ -704,8 +704,11 @@ async function fetchRakuten(p) {
 
   try {
     const res = await fetch(`/api/rakuten?${param}${rakutenApiParam()}`);
-    if (!res.ok) throw new Error('API error');
     const data = await res.json();
+    if (!res.ok) {
+      el.outerHTML = `<div class="row-msg">${esc(data.error || '取得に失敗しました')}</div>`;
+      return;
+    }
 
     const items = data.Items;
     if (!items || items.length === 0) {
@@ -948,6 +951,7 @@ async function searchProduct(itemNo) {
     el.innerHTML = renderCompareResult(costco, null, 'loading');
 
     let rakutenItems = [];
+    let rakutenError = null;
     if (costco.name || costco.janCode) {
       let param;
       if (costco.janCode) {
@@ -957,21 +961,23 @@ async function searchProduct(itemNo) {
       }
       try {
         const rRes = await fetch(`/api/rakuten?${param}${rakutenApiParam()}`);
+        const rData = await rRes.json();
         if (rRes.ok) {
-          const rData = await rRes.json();
           rakutenItems = (rData.Items || []).map(i => i.Item);
+        } else {
+          rakutenError = rData.error || '取得に失敗しました';
         }
       } catch {}
     }
 
     compareData = { costco, rakutenItems };
-    el.innerHTML = renderCompareResult(costco, rakutenItems, 'done');
+    el.innerHTML = renderCompareResult(costco, rakutenItems, 'done', rakutenError);
   } catch (e) {
     el.innerHTML = '<div class="compare-loading">取得に失敗しました</div>';
   }
 }
 
-function renderCompareResult(costco, rakutenItems, state) {
+function renderCompareResult(costco, rakutenItems, state, rakutenError) {
   let html = '';
 
   // コストコセクション
@@ -1009,6 +1015,8 @@ function renderCompareResult(costco, rakutenItems, state) {
   html += '<div class="section-title"><span style="color:#bf0000;font-weight:800;font-size:14px">R</span> 楽天市場</div>';
   if (state === 'loading') {
     html += '<div class="row-msg">楽天市場の価格を取得中...</div>';
+  } else if (rakutenError) {
+    html += `<div class="row-msg">${esc(rakutenError)}</div>`;
   } else if (!rakutenItems || rakutenItems.length === 0) {
     html += '<div class="row-msg">楽天市場で該当商品が見つかりませんでした</div>';
   } else {
